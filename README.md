@@ -74,3 +74,5 @@ npm run dev
   `backend/app/routers/<模块>.py`，业务规则在 `backend/app/services/<模块>.py`。
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
+- 残损单的责任方判定与箱况联动以 `app/services/damage_rule.py` 为唯一入口，
+  残损登记、集装箱档案、作业结算三处都从它拿结论，不再各自实现。

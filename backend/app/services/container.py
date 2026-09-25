@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.damage_rule import DamageAssessment
 from app.store import store
 
 MODULE = "container"
@@ -59,3 +60,19 @@ class ContainerService:
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS
         return entry, f"集装箱已{action}"
+
+    def apply_damage_assessment(self, container_no: str, assessment: DamageAssessment) -> str:
+        """把残损共享判定的箱况联动结论落到集装箱档案。
+
+        本方法只负责落地，不做任何判定；箱况改不改、改成什么，
+        一律以 app.services.damage_rule.assess_damage 的结论为准。
+        历史箱况不被回写：只有定责动作触发时才会走到这里。
+        """
+        if not assessment.箱况联动:
+            return "箱况不变"
+        for row in store.rows(MODULE):
+            if str(row.get("箱号")) == container_no:
+                row["箱况等级"] = assessment.箱况等级
+                row["箱体状态"] = assessment.箱体状态
+                return f"箱况等级→{assessment.箱况等级}、箱体状态→{assessment.箱体状态}"
+        return "未找到关联集装箱，箱况未变更"

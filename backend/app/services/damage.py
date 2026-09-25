@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.container import ContainerService
+from app.services.damage_rule import assess_damage
 from app.store import store
 
 MODULE = "damage"
@@ -13,6 +15,9 @@ NEGATIVE_ACTIONS = []
 
 
 class DamageService:
+    def __init__(self) -> None:
+        self._containers = ContainerService()
+
     def list_entries(
         self,
         *,
@@ -58,4 +63,18 @@ class DamageService:
         entry["status"] = target
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS
+        if action == "确认定责":
+            return self._confirm_liability(entry)
         return entry, f"残损记录已{action}"
+
+    def _confirm_liability(self, entry: dict[str, Any]) -> tuple[dict[str, Any], str]:
+        """确认定责：责任方与箱况联动都取共享判定的结论，本模块不自行判断。"""
+        assessment = assess_damage(entry)
+        entry["责任方"] = assessment.责任方
+        message = f"残损记录已确认定责，责任方：{assessment.责任方}"
+        if assessment.箱况联动:
+            applied = self._containers.apply_damage_assessment(
+                str(entry.get("关联箱号") or "").strip(), assessment
+            )
+            message += f"；箱况联动：{applied}"
+        return entry, message
