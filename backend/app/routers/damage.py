@@ -39,6 +39,15 @@ def get_entry(entry_id: int) -> dict:
     return entry
 
 
+@router.get("/{entry_id}/verdict", response_model=dict)
+def get_verdict(entry_id: int) -> dict:
+    """读取该残损记录的统一判定结果：责任方与箱况联动，三处口径一致。"""
+    verdict = service.get_verdict(entry_id)
+    if verdict is None:
+        raise HTTPException(status_code=404, detail=f"残损记录 {entry_id} 不存在或已归档")
+    return verdict.as_dict()
+
+
 @router.post("", response_model=ActionResult)
 def create_entry(payload: EntryPayload) -> ActionResult:
     """登记一条残损记录，缺字段时说明原因而不是静默丢弃。"""

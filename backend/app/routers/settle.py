@@ -30,6 +30,18 @@ def list_entries(
     return PageResult(items=items, total=total, page=page, size=size)
 
 
+@router.get("/damage-verdict", response_model=dict)
+def damage_verdict(damage_no: str = Query(..., description="残损编号")) -> dict:
+    """按残损编号读取统一判定：结算对象取责任方，箱况联动决定是否产生修箱费。"""
+    verdict = service.damage_verdict(damage_no)
+    if verdict is None:
+        raise HTTPException(status_code=404, detail=f"残损记录 {damage_no} 不存在或已归档")
+    result = verdict.as_dict()
+    result["结算对象"] = verdict.responsible
+    result["产生修箱费"] = verdict.condition_grade is not None
+    return result
+
+
 @router.get("/{entry_id}", response_model=dict)
 def get_entry(entry_id: int) -> dict:
     """读取单条结算单明细；不存在时给出可读的错误说明。"""

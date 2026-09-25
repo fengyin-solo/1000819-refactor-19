@@ -1,8 +1,12 @@
-"""作业结算业务规则：状态流转、字段校验与筛选口径都收在这里。"""
+"""作业结算业务规则：状态流转、字段校验与筛选口径都收在这里。
+
+残损相关的结算对象与修箱费口径不在本模块各自判断，统一取 damage_assessment 的判定结论。
+"""
 from __future__ import annotations
 
 from typing import Any
 
+from app.services.damage_assessment import DamageVerdict, assess_damage
 from app.store import store
 
 MODULE = "settle"
@@ -32,6 +36,13 @@ class SettleService:
 
     def get_entry(self, entry_id: int) -> dict[str, Any] | None:
         return store.find(MODULE, entry_id)
+
+    def damage_verdict(self, damage_no: str) -> DamageVerdict | None:
+        """结算侧读取统一判定：结算对象取责任方，修箱费口径取箱况联动结论。"""
+        for row in store.rows("damage"):
+            if str(row.get("残损编号") or "") == damage_no:
+                return assess_damage(row)
+        return None
 
     def create_entry(self, values: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str]]:
         missing = [field for field in REQUIRED_FIELDS if not str(values.get(field) or "").strip()]

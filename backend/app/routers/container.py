@@ -39,6 +39,15 @@ def get_entry(entry_id: int) -> dict:
     return entry
 
 
+@router.get("/{entry_id}/damage-verdict", response_model=dict)
+def damage_verdict(entry_id: int) -> dict:
+    """读取该箱关联残损记录的统一判定：责任方归属与箱况联动结论。"""
+    entry, verdicts = service.damage_verdicts(entry_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail=f"集装箱 {entry_id} 不存在或已归档")
+    return {"箱号": entry.get("箱号"), "箱况等级": entry.get("箱况等级"), "箱体状态": entry.get("status"), "verdicts": verdicts}
+
+
 @router.post("", response_model=ActionResult)
 def create_entry(payload: EntryPayload) -> ActionResult:
     """登记一条集装箱，缺字段时说明原因而不是静默丢弃。"""
